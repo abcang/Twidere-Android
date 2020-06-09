@@ -28,6 +28,7 @@ import android.widget.ImageView
 import android.widget.ImageView.ScaleType
 import com.bumptech.glide.Glide
 import com.bumptech.glide.RequestManager
+import com.bumptech.glide.request.target.Target
 import org.mariotaku.twidere.R
 import org.mariotaku.twidere.annotation.PreviewStyle
 import org.mariotaku.twidere.extension.model.aspect_ratio
@@ -37,6 +38,7 @@ import org.mariotaku.twidere.model.media.AuthenticatedUri
 import org.mariotaku.twidere.model.util.ParcelableMediaUtils
 import java.lang.ref.WeakReference
 import kotlin.math.ceil
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 /**
@@ -108,7 +110,8 @@ class CardMediaContainer(context: Context, attrs: AttributeSet? = null) : ViewGr
 
     private fun ImageView.displayImage(displayChildIndex: Int, media: Array<ParcelableMedia>,
             requestManager: RequestManager, accountKey: UserKey?, withCredentials: Boolean) {
-        this.scaleType = when (style) {
+        val actualStyle = if (media.size == 1) PreviewStyle.SCALE else PreviewStyle.CROP
+        this.scaleType = when (actualStyle) {
             PreviewStyle.ACTUAL_SIZE, PreviewStyle.CROP -> ScaleType.CENTER_CROP
             PreviewStyle.SCALE -> ScaleType.FIT_CENTER
             PreviewStyle.NONE -> ScaleType.CENTER
@@ -141,7 +144,7 @@ class CardMediaContainer(context: Context, attrs: AttributeSet? = null) : ViewGr
                     // Ignore
                 }
             }
-            request.into(this)
+            request.override(Target.SIZE_ORIGINAL).into(this)
             if (this is MediaPreviewImageView) {
                 setHasPlayIcon(ParcelableMediaUtils.hasPlayIcon(item.type))
             }
@@ -234,15 +237,14 @@ class CardMediaContainer(context: Context, attrs: AttributeSet? = null) : ViewGr
 
     private fun measure1Media(contentWidth: Int, childIndices: IntArray, ratioMultiplier: Float): Int {
         val child = getChildAt(childIndices[0])
+        val heightRatio = 1.0
         var childHeight =
-            (contentWidth.toFloat() * WIDTH_HEIGHT_RATIO * ratioMultiplier).roundToInt()
-        if (style == PreviewStyle.ACTUAL_SIZE) {
-            val media = (child.layoutParams as MediaLayoutParams).media
-            if (media != null) {
-                val aspectRatio = media.aspect_ratio
-                if (!aspectRatio.isNaN()) {
-                    childHeight = (contentWidth / aspectRatio.coerceIn(0.3, 20.0)).roundToInt()
-                }
+            (contentWidth.toFloat() * heightRatio * ratioMultiplier).roundToInt()
+        val media = (child.layoutParams as MediaLayoutParams).media
+        if (media != null) {
+            val aspectRatio = media.aspect_ratio
+            if (!aspectRatio.isNaN()) {
+                childHeight = min((contentWidth / aspectRatio.coerceIn(0.3, 20.0)).roundToInt(), childHeight)
             }
         }
         val widthSpec = MeasureSpec.makeMeasureSpec(contentWidth, MeasureSpec.EXACTLY)

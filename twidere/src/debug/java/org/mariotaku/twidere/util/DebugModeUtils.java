@@ -61,7 +61,7 @@ public class DebugModeUtils {
                         .finish())
                 .build());
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            WebView.setWebContentsDebuggingEnabled(true);
+//            WebView.setWebContentsDebuggingEnabled(true);
         }
     }
 }
